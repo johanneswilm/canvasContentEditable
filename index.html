@@ -1,0 +1,131 @@
+<html>
+<head>
+<style>
+body {
+    counter-reset: footnote;
+    background-color: #cecece;
+}
+#footnotes div::before {
+    content: counter(footnote)') ';
+    font-weight: bold;
+    counter-increment: footnote;
+}
+#editor, #footnotes {
+    background-color: #fff;
+    border: 1px solid black;
+    padding: 1em;
+}
+
+#footnotes {
+    margin-top: 20px;
+}
+
+</style>
+<script>
+function layoutFootnotes() {
+    var allFootnotes, footnoteText, footnoteElement, footnoteContainer, canvasElement, context, i;
+    footnoteContainer = document.querySelector('#footnotes');
+    footnoteContainer.innerHTML = '';
+    allFootnotes = document.querySelectorAll('#editor canvas.footnote');
+
+    for (i=0;i<allFootnotes.length;i++) {
+        canvasElement = allFootnotes[i];
+        canvasElement.width = 15;
+        canvasElement.height = 15;
+
+        footnoteText = canvasElement.getAttribute('data-text');
+        if (footnoteText === '' || footnoteText === null) {
+            footnoteText = '&nbsp;';
+        }
+        footnoteElement = document.createElement('div');
+        footnoteElement.contentEditable = true;
+        footnoteElement.innerHTML = footnoteText;
+        footnoteContainer.appendChild(footnoteElement);
+        footnoteElement.addEventListener('blur', (function(canvasElement) {
+            return function(event) {
+                canvasElement.setAttribute('data-text', this.innerHTML)
+            }
+            
+        })(canvasElement,footnoteElement));
+
+        text = i+1;
+        context = canvasElement.getContext("2d");
+        context.font = "bold 10px Arial";
+        context.textBaseline = "top";
+        textWidth = context.measureText(text)['width'];
+        canvasElement.width = textWidth;
+        context.font = "bold 10px Arial";
+        context.textBaseline = "top";
+        context.fillText(text, 0, 0);
+        
+        
+
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    layoutFootnotes();
+
+
+    var editorArea = document.querySelector('#editor');
+
+
+    var config = {
+        attributes: true,
+        subtree: true,
+        characterData: true,
+        childList: true
+    };
+
+    var mutationHandler = function (mutationRecords) {
+
+        mutationRecords.forEach ( function (mutation) {
+
+            if (    mutation.type                == "childList"
+                &&  typeof mutation.removedNodes == "object"
+            ) {
+                for (var i=0;i<mutation.removedNodes.length;i++) {
+                    if (mutation.removedNodes[i].nodeType !== 3 && mutation.removedNodes[i].tagName.toLowerCase()==="canvas" && mutation.removedNodes[i].classList.contains('footnote')) {
+                        layoutFootnotes();
+                    }
+                }
+            }
+        });
+    }
+
+    var observer = new MutationObserver(mutationHandler); 
+
+    observer.observe(editorArea, config);
+
+    var footnoteButton = document.getElementById('insert-footnote');
+
+    footnoteButton.addEventListener('click', function() {
+
+    var range = window.getSelection().getRangeAt(0); 
+
+    var newElement = document.createElement('canvas');
+    newElement.classList.add('footnote');
+    newElement.innerHTML = ' ';
+
+
+    if(range.startContainer.parentNode.parentNode.id==='editor') {
+        range.deleteContents();
+        range.insertNode(newElement);
+        layoutFootnotes();
+    }
+
+    });
+
+});
+</script>
+</head>
+<body>
+<div id="editor" contenteditable="true">
+<p><canvas class="footnote" data-text="This is a footnote."> </canvas><canvas class="footnote" data-text="This is a footnote."> </canvas>This <canvas class="footnote" data-text="This is a footnote."> </canvas>is a paragraph<canvas class="footnote" data-text="This is another footnote."> </canvas>.<canvas class="footnote" data-text="This is a footnote."> </canvas></p>
+<p>This is a second <canvas class="footnote" data-text="This is a footnote."> </canvas>paragraph.<canvas class="footnote" data-text="This is a footnote."> </canvas></p>
+</div>
+<div><button id="insert-footnote">Insert footnote</button></div>
+<div id="footnotes">
+</div>
+</body>
+</html>
