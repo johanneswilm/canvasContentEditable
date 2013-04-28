@@ -5,6 +5,7 @@
             body {
                 counter-reset: footnote;
                 background-color: #cecece;
+                line-height: 1.2; /* needs to be set manually */
             }
             #footnotes div::before {
                 content: counter(footnote)') ';
@@ -37,8 +38,11 @@
                     imgElement = allFootnotes[i];
                     canvasElement = document.createElement('canvas');
                     canvasElement.height = parseInt(document.defaultView.getComputedStyle(
-                        imgElement.parentNode, null)['height'], 10);
-
+                        imgElement.parentNode, null)['lineHeight'], 10);
+                    console.log(document.defaultView.getComputedStyle(
+                        imgElement, null)['height']);
+                    console.log(document.defaultView.getComputedStyle(
+                        imgElement, null)['fontSize']);
                     footnoteText = imgElement.getAttribute('data-text');
                     if (footnoteText === '') {
                         footnoteText = '&nbsp;';
@@ -60,11 +64,12 @@
                     fontStyle = document.defaultView.getComputedStyle(
                         imgElement, null)['font'];
                     context.font = fontStyle;
+                    console.log(fontStyle);
                     textWidth = context.measureText(text)['width'];
                     canvasElement.width = textWidth;
                     context.font = fontStyle;
                     context.textBaseline = "top";
-                    context.fillText(text, 0, 0);
+                    context.fillText(text, 0, 2);
                     imgElement.src = canvasElement.toDataURL("image/png");
                     imgElement.alt = text;
                 }
