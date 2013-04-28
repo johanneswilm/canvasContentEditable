@@ -5,7 +5,8 @@
             body {
                 counter-reset: footnote;
                 background-color: #cecece;
-                line-height: 1.2; /* needs to be set manually */
+                line-height: 1.2;
+                /* needs to be set manually */
             }
             #footnotes div::before {
                 content: counter(footnote)') ';
@@ -28,8 +29,8 @@
         <script>
             function layoutFootnotes() {
                 var allFootnotes, footnoteText, footnoteElement,
-                        footnoteContainer, canvasElement, context, imgElement,
-                        text, textWidth, fontStyle, i;
+                    footnoteContainer, canvasElement, context, imgElement,
+                    text, textWidth, fontStyle, i;
                 footnoteContainer = document.querySelector('#footnotes');
                 footnoteContainer.innerHTML = '';
                 allFootnotes = document.querySelectorAll('#editor img.footnote');
@@ -71,26 +72,27 @@
             }
 
             document.addEventListener("DOMContentLoaded", function () {
+                var editorArea = document.querySelector('#editor'),
+                    mutationConfig = {
+                        attributes: true,
+                        subtree: true,
+                        characterData: true,
+                        childList: true
+                    }, mutationHandler, observer, footnoteButton, beforePrint,
+                        afterPrint;
+
                 layoutFootnotes();
 
 
-                var editorArea = document.querySelector('#editor');
 
-
-                var config = {
-                    attributes: true,
-                    subtree: true,
-                    characterData: true,
-                    childList: true
-                };
-
-                var mutationHandler = function (mutationRecords) {
+                mutationHandler = function (mutationRecords) {
 
                     mutationRecords.forEach(function (mutation) {
+                        var i;
 
                         if (mutation.type === "childList" && typeof mutation.removedNodes ===
                             "object") {
-                            for (var i = 0; i < mutation.removedNodes.length; i++) {
+                            for (i = 0; i < mutation.removedNodes.length; i++) {
                                 if (mutation.removedNodes[i].nodeType !== 3 &&
                                     mutation.removedNodes[i].tagName.toLowerCase() ===
                                     "img" && mutation.removedNodes[i].classList
@@ -102,17 +104,17 @@
                     });
                 }
 
-                var observer = new MutationObserver(mutationHandler);
+                observer = new MutationObserver(mutationHandler);
 
-                observer.observe(editorArea, config);
+                observer.observe(editorArea, mutationConfig);
 
-                var footnoteButton = document.getElementById('insert-footnote');
+                footnoteButton = document.getElementById('insert-footnote');
 
                 footnoteButton.addEventListener('click', function () {
 
-                    var range = window.getSelection().getRangeAt(0);
+                    var range = window.getSelection().getRangeAt(0),
+                        newElement = document.createElement('img');
 
-                    var newElement = document.createElement('img');
                     newElement.classList.add('footnote');
                     newElement.setAttribute('data-text', '');
                     newElement.innerHTML = ' ';
@@ -127,7 +129,7 @@
 
                 });
 
-                var beforePrint = function () {
+                beforePrint = function () {
                     var footnoteNumbers = document.querySelectorAll(
                         '#editor img.footnote'),
                         i, fn, fnSpan;
@@ -144,10 +146,10 @@
                         fn.parentNode.replaceChild(fnSpan, fn);
                     }
                 };
-                var afterPrint = function () {
+                afterPrint = function () {
                     var footnoteNumbers = document.querySelectorAll(
                         '#editor span.footnote'),
-                        i, fn, fnImg;
+                        i, fn, fnImg, mediaQueryList;
 
 
                     for (i = 0; i < footnoteNumbers.length; i++) {
@@ -160,11 +162,11 @@
                         fn.parentNode.replaceChild(fnImg, fn);
                     }
                     layoutFootnotes();
-                    observer.observe(editorArea, config);
+                    observer.observe(editorArea, mutationConfig);
                 };
 
                 if (window.matchMedia) {
-                    var mediaQueryList = window.matchMedia('print');
+                    mediaQueryList = window.matchMedia('print');
                     mediaQueryList.addListener(function (mql) {
                         if (mql.matches) {
                             beforePrint();
@@ -183,11 +185,8 @@
     
     <body>
         <div id="editor" contenteditable="true">
-            <p><img class="footnote" data-text="This is the first footnote."><img class="footnote" data-text="This is the second footnote.">This
-                <img class="footnote" data-text="This is a third footnote.">is a paragraph<img class="footnote" data-text="This is another footnote.">.<img class="footnote" data-text="And this is yet one more footnote.">
-            </p>
-            <p>This is a second <img class="footnote" data-text="A first footnote in the second paragraph.">paragraph.<img class="footnote" data-text="#2 in #2.">
-            </p>
+            <p><img class="footnote" data-text="This is the first footnote."><img class="footnote" data-text="This is the second footnote.">This<img class="footnote" data-text="This is a third footnote."> is a paragraph<img class="footnote" data-text="This is another footnote.">.<img class="footnote" data-text="And this is yet one more footnote."></p>
+            <p>This is a second<img class="footnote" data-text="A first footnote in the second paragraph."> paragraph.<img class="footnote" data-text="#2 in #2."></p>
         </div>
         <div>
             <button id="insert-footnote">Insert footnote</button>
