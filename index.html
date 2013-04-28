@@ -19,6 +19,10 @@ body {
 #footnotes {
     margin-top: 20px;
 }
+span.footnote {
+    font-size: 10px;
+    vertical-align:text-top;
+}
 
 </style>
 <script>
@@ -59,8 +63,7 @@ function layoutFootnotes() {
         context.textBaseline = "top";
         context.fillText(text, 0, 0);
         imgElement.src = canvasElement.toDataURL("image/png");
-        
-
+        imgElement.alt = text;
     }
 }
 
@@ -118,6 +121,47 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
 });
+(function() {
+    var beforePrint = function() {
+        var footnoteNumbers = document.querySelectorAll('#editor img.footnote'), i, fn, fnSpan;
+
+        for (i=0;i<footnoteNumbers.length;i++) {
+            fn = footnoteNumbers[i];
+            fnSpan = document.createElement('span');
+            fnSpan.classList.add('footnote');
+            fnSpan.innerHTML = fn.getAttribute('alt');
+            fnSpan.setAttribute('data-text',fn.getAttribute('data-text'));
+            fn.parentNode.replaceChild(fnSpan, fn);
+        }
+    };
+    var afterPrint = function() {
+        var footnoteNumbers = document.querySelectorAll('#editor span.footnote'), i, fn, fnImg;
+
+        for (i=0;i<footnoteNumbers.length;i++) {
+            fn = footnoteNumbers[i];
+            fnImg = document.createElement('img');
+            fnImg.classList.add('footnote');
+            fnImg.alt = fn.innerHTML;
+            fnImg.setAttribute('data-text',fn.getAttribute('data-text'));
+            fn.parentNode.replaceChild(fnImg, fn);
+        }        
+    };
+
+    if (window.matchMedia) {
+        var mediaQueryList = window.matchMedia('print');
+        mediaQueryList.addListener(function(mql) {
+            if (mql.matches) {
+                beforePrint();
+            } else {
+                afterPrint();
+            }
+        });
+    }
+
+    window.onbeforeprint = beforePrint;
+    window.onafterprint = afterPrint;
+}());
+
 </script>
 </head>
 <body>
