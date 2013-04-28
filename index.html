@@ -1,183 +1,198 @@
 <html>
-<head>
-<style>
-body {
-    counter-reset: footnote;
-    background-color: #cecece;
-}
-#footnotes div::before {
-    content: counter(footnote)') ';
-    font-weight: bold;
-    counter-increment: footnote;
-}
-#editor, #footnotes {
-    background-color: #fff;
-    border: 1px solid black;
-    padding: 1em;
-}
-
-#footnotes {
-    margin-top: 20px;
-}
-span.footnote {
-    font-size: 10px;
-    vertical-align:text-top;
-}
-
-</style>
-<script>
-function layoutFootnotes() {
-    var allFootnotes, footnoteText, footnoteElement, footnoteContainer, canvasElement, context, i;
-    footnoteContainer = document.querySelector('#footnotes');
-    footnoteContainer.innerHTML = '';
-    allFootnotes = document.querySelectorAll('#editor img.footnote');
-
-    for (i=0;i<allFootnotes.length;i++) {
-        imgElement = allFootnotes[i];
-        canvasElement = document.createElement('canvas');
-        canvasElement.width = 15;
-        canvasElement.height = 15;
-
-        footnoteText = imgElement.getAttribute('data-text');
-        if (footnoteText === '' || footnoteText === null) {
-            footnoteText = '&nbsp;';
-        }
-        footnoteElement = document.createElement('div');
-        footnoteElement.contentEditable = true;
-        footnoteElement.innerHTML = footnoteText;
-        footnoteContainer.appendChild(footnoteElement);
-        footnoteElement.addEventListener('blur', (function(imgElement) {
-            return function(event) {
-                imgElement.setAttribute('data-text', this.innerHTML)
+    
+    <head>
+        <style>
+            body {
+                counter-reset: footnote;
+                background-color: #cecece;
             }
-            
-        })(imgElement,footnoteElement));
+            #footnotes div::before {
+                content: counter(footnote)') ';
+                font-weight: bold;
+                counter-increment: footnote;
+            }
+            #editor, #footnotes {
+                background-color: #fff;
+                border: 1px solid black;
+                padding: 1em;
+            }
+            #footnotes {
+                margin-top: 20px;
+            }
+            .footnote {
+                font-size: 10px;
+                vertical-align:text-top;
+            }
+        </style>
+        <script>
+            function layoutFootnotes() {
+                var allFootnotes, footnoteText, footnoteElement,
+                        footnoteContainer, canvasElement, context, imgElement,
+                        text, textWidth, fontStyle, i;
+                footnoteContainer = document.querySelector('#footnotes');
+                footnoteContainer.innerHTML = '';
+                allFootnotes = document.querySelectorAll('#editor img.footnote');
 
-        text = i+1;
-        context = canvasElement.getContext("2d");
-        context.font = "bold 10px Arial";
-        context.textBaseline = "top";
-        textWidth = context.measureText(text)['width'];
-        canvasElement.width = textWidth;
-        context.font = "bold 10px Arial";
-        context.textBaseline = "top";
-        context.fillText(text, 0, 0);
-        imgElement.src = canvasElement.toDataURL("image/png");
-        imgElement.alt = text;
-    }
-}
+                for (i = 0; i < allFootnotes.length; i++) {
+                    imgElement = allFootnotes[i];
+                    canvasElement = document.createElement('canvas');
+                    canvasElement.height = parseInt(document.defaultView.getComputedStyle(
+                        imgElement.parentNode, null)['height'], 10);
 
-document.addEventListener("DOMContentLoaded", function () {
-    layoutFootnotes();
-
-
-    var editorArea = document.querySelector('#editor');
-
-
-    var config = {
-        attributes: true,
-        subtree: true,
-        characterData: true,
-        childList: true
-    };
-
-    var mutationHandler = function (mutationRecords) {
-
-        mutationRecords.forEach ( function (mutation) {
-
-            if (    mutation.type                == "childList"
-                &&  typeof mutation.removedNodes == "object"
-            ) {
-                for (var i=0;i<mutation.removedNodes.length;i++) {
-                    if (mutation.removedNodes[i].nodeType !== 3 && mutation.removedNodes[i].tagName.toLowerCase()==="img" && mutation.removedNodes[i].classList.contains('footnote')) {
-                        layoutFootnotes();
+                    footnoteText = imgElement.getAttribute('data-text');
+                    if (footnoteText === '') {
+                        footnoteText = '&nbsp;';
                     }
+                    footnoteElement = document.createElement('div');
+                    footnoteElement.contentEditable = true;
+                    footnoteElement.innerHTML = footnoteText;
+                    footnoteContainer.appendChild(footnoteElement);
+                    footnoteElement.addEventListener('blur', (function (
+                        imgElement) {
+                        return function (event) {
+                            imgElement.setAttribute('data-text', this.innerHTML);
+                        };
+
+                    })(imgElement, footnoteElement));
+
+                    text = i + 1;
+                    context = canvasElement.getContext("2d");
+                    fontStyle = document.defaultView.getComputedStyle(
+                        imgElement, null)['font'];
+                    context.font = fontStyle;
+                    textWidth = context.measureText(text)['width'];
+                    canvasElement.width = textWidth;
+                    context.font = fontStyle;
+                    context.textBaseline = "top";
+                    context.fillText(text, 0, 0);
+                    imgElement.src = canvasElement.toDataURL("image/png");
+                    imgElement.alt = text;
                 }
             }
-        });
-    }
 
-    var observer = new MutationObserver(mutationHandler); 
-
-    observer.observe(editorArea, config);
-
-    var footnoteButton = document.getElementById('insert-footnote');
-
-    footnoteButton.addEventListener('click', function() {
-
-        var range = window.getSelection().getRangeAt(0); 
-
-        var newElement = document.createElement('img');
-        newElement.classList.add('footnote');
-        newElement.innerHTML = ' ';
+            document.addEventListener("DOMContentLoaded", function () {
+                layoutFootnotes();
 
 
-        if(range.startContainer.parentNode.parentNode.id==='editor') {
-            range.deleteContents();
-            range.insertNode(newElement);
-            layoutFootnotes();
-        }
-
-    });
-
-    var beforePrint = function() {
-        var footnoteNumbers = document.querySelectorAll('#editor img.footnote'), i, fn, fnSpan;
-
-        observer.disconnect();
-
-        for (i=0;i<footnoteNumbers.length;i++) {
-            fn = footnoteNumbers[i];
-            fnSpan = document.createElement('span');
-            fnSpan.classList.add('footnote');
-            fnSpan.innerHTML = fn.getAttribute('alt');
-            fnSpan.setAttribute('data-text',fn.getAttribute('data-text'));
-            fn.parentNode.replaceChild(fnSpan, fn);
-        }
-    };
-    var afterPrint = function() {
-        var footnoteNumbers = document.querySelectorAll('#editor span.footnote'), i, fn, fnImg;
+                var editorArea = document.querySelector('#editor');
 
 
-        for (i=0;i<footnoteNumbers.length;i++) {
-            fn = footnoteNumbers[i];
-            fnImg = document.createElement('img');
-            fnImg.classList.add('footnote');
-            fnImg.alt = fn.innerHTML;
-            fnImg.setAttribute('data-text',fn.getAttribute('data-text'));
-            fn.parentNode.replaceChild(fnImg, fn);
-        }  
-        layoutFootnotes();
-        observer.observe(editorArea, config);
-    };
+                var config = {
+                    attributes: true,
+                    subtree: true,
+                    characterData: true,
+                    childList: true
+                };
 
-    if (window.matchMedia) {
-        var mediaQueryList = window.matchMedia('print');
-        mediaQueryList.addListener(function(mql) {
-            if (mql.matches) {
-                beforePrint();
-            } else {
-                afterPrint();
-            }
-        });
-    }
+                var mutationHandler = function (mutationRecords) {
 
-    window.onbeforeprint = beforePrint;
-    window.onafterprint = afterPrint;
+                    mutationRecords.forEach(function (mutation) {
 
-});
-(function() {
+                        if (mutation.type === "childList" && typeof mutation.removedNodes ===
+                            "object") {
+                            for (var i = 0; i < mutation.removedNodes.length; i++) {
+                                if (mutation.removedNodes[i].nodeType !== 3 &&
+                                    mutation.removedNodes[i].tagName.toLowerCase() ===
+                                    "img" && mutation.removedNodes[i].classList
+                                    .contains('footnote')) {
+                                    layoutFootnotes();
+                                }
+                            }
+                        }
+                    });
+                }
+
+                var observer = new MutationObserver(mutationHandler);
+
+                observer.observe(editorArea, config);
+
+                var footnoteButton = document.getElementById('insert-footnote');
+
+                footnoteButton.addEventListener('click', function () {
+
+                    var range = window.getSelection().getRangeAt(0);
+
+                    var newElement = document.createElement('img');
+                    newElement.classList.add('footnote');
+                    newElement.setAttribute('data-text', '');
+                    newElement.innerHTML = ' ';
+
+
+                    if (range.startContainer.parentNode.parentNode.id ===
+                        'editor') {
+                        range.deleteContents();
+                        range.insertNode(newElement);
+                        layoutFootnotes();
+                    }
+
+                });
+
+                var beforePrint = function () {
+                    var footnoteNumbers = document.querySelectorAll(
+                        '#editor img.footnote'),
+                        i, fn, fnSpan;
+
+                    observer.disconnect();
+
+                    for (i = 0; i < footnoteNumbers.length; i++) {
+                        fn = footnoteNumbers[i];
+                        fnSpan = document.createElement('span');
+                        fnSpan.classList.add('footnote');
+                        fnSpan.innerHTML = fn.getAttribute('alt');
+                        fnSpan.setAttribute('data-text', fn.getAttribute(
+                            'data-text'));
+                        fn.parentNode.replaceChild(fnSpan, fn);
+                    }
+                };
+                var afterPrint = function () {
+                    var footnoteNumbers = document.querySelectorAll(
+                        '#editor span.footnote'),
+                        i, fn, fnImg;
+
+
+                    for (i = 0; i < footnoteNumbers.length; i++) {
+                        fn = footnoteNumbers[i];
+                        fnImg = document.createElement('img');
+                        fnImg.classList.add('footnote');
+                        fnImg.alt = fn.innerHTML;
+                        fnImg.setAttribute('data-text', fn.getAttribute(
+                            'data-text'));
+                        fn.parentNode.replaceChild(fnImg, fn);
+                    }
+                    layoutFootnotes();
+                    observer.observe(editorArea, config);
+                };
+
+                if (window.matchMedia) {
+                    var mediaQueryList = window.matchMedia('print');
+                    mediaQueryList.addListener(function (mql) {
+                        if (mql.matches) {
+                            beforePrint();
+                        } else {
+                            afterPrint();
+                        }
+                    });
+                }
+
+                window.onbeforeprint = beforePrint;
+                window.onafterprint = afterPrint;
+
+            });
+        </script>
+    </head>
     
-}());
+    <body>
+        <div id="editor" contenteditable="true">
+            <p><img class="footnote" data-text="This is the first footnote."><img class="footnote" data-text="This is the second footnote.">This
+                <img class="footnote" data-text="This is a third footnote.">is a paragraph<img class="footnote" data-text="This is another footnote.">.<img class="footnote" data-text="And this is yet one more footnote.">
+            </p>
+            <p>This is a second <img class="footnote" data-text="A first footnote in the second paragraph.">paragraph.<img class="footnote" data-text="#2 in #2.">
+            </p>
+        </div>
+        <div>
+            <button id="insert-footnote">Insert footnote</button>
+        </div>
+        <div id="footnotes"></div>
+    </body>
 
-</script>
-</head>
-<body>
-<div id="editor" contenteditable="true">
-<p><img class="footnote" data-text="This is a footnote."><img class="footnote" data-text="This is a footnote.">This <img class="footnote" data-text="This is a footnote.">is a paragraph<img class="footnote" data-text="This is another footnote.">.<img class="footnote" data-text="This is a footnote."></p>
-<p>This is a second <img class="footnote" data-text="This is a footnote.">paragraph.<img class="footnote" data-text="This is a footnote."></p>
-</div>
-<div><button id="insert-footnote">Insert footnote</button></div>
-<div id="footnotes">
-</div>
-</body>
 </html>
