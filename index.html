@@ -180,7 +180,13 @@
                         'editor') {
                         range.deleteContents();
                         range.insertNode(newElement);
-                        layoutEscapes(escapeType);
+                        if (escapeType==='footnote') {
+                            layoutFootnotes();
+                        } else if (escapeType==='marginnote') {
+                            layoutMarginnotes();
+                        } else {
+                            layoutEndnotes();
+                        }
                     }
 
                 }
