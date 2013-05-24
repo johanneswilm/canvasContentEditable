@@ -166,6 +166,16 @@
 
                 observer.observe(editorArea, mutationConfig);
 
+                function checkIfInEditor (node) {
+                    if (node.id === 'editor') {
+                        return true;
+                    } else if (node === document.body) {
+                        return false;
+                    } else {
+                        return checkIfInEditor(node.parentNode);
+                    }
+                }
+
                 function escapeButtonClicked (escapeType) {
 
                     var range = window.getSelection().getRangeAt(0),
@@ -176,8 +186,7 @@
                     newElement.innerHTML = ' ';
 
 
-                    if (range.startContainer.parentNode.parentNode.id ===
-                        'editor') {
+                    if (checkIfInEditor(range.startContainer)) {
                         range.deleteContents();
                         range.insertNode(newElement);
                         if (escapeType==='footnote') {
