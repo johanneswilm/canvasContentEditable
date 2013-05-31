@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html> 
+<html>
+    
     <head>
         <meta charset="UTF-8">
         <style>
@@ -20,7 +21,7 @@
                 counter-increment: endnote;
             }
             #marginnotes div::before {
-                content: '⚫';
+                content:'°';
                 font-weight: bold;
             }
             #editor, #footnotes, #marginnotes, #endnotes {
@@ -37,33 +38,34 @@
             }
         </style>
         <script>
-            function styleCanvasImg (imgElement, text, highlight) {
-                    canvasElement = document.createElement('canvas');
-                    canvasElement.height = parseInt(document.defaultView.getComputedStyle(
+            function styleCanvasImg(imgElement, text, highlight) {
+                canvasElement = document.createElement('canvas');
+                canvasElement.height = parseInt(document.defaultView.getComputedStyle(
                         imgElement.parentNode, null)['lineHeight'], 10);
-                    context = canvasElement.getContext("2d");
-                    fontStyle = document.defaultView.getComputedStyle(
-                        imgElement, null)['font'];
-                    context.font = fontStyle;
-                    textWidth = context.measureText(text)['width'];
-                    canvasElement.width = textWidth;
-                    context.font = fontStyle;
-                    context.textBaseline = "top";
-                    if (highlight) {
-                        context.fillStyle= 'red';
-                    }
-                    context.fillText(text, 0, 2);
-                    imgElement.src = canvasElement.toDataURL("image/png");
-                    imgElement.alt = text;
+                context = canvasElement.getContext("2d");
+                fontStyle = document.defaultView.getComputedStyle(
+                    imgElement, null)['font'];
+                context.font = fontStyle;
+                textWidth = context.measureText(text)['width'];
+                canvasElement.width = textWidth;
+                context.font = fontStyle;
+                context.textBaseline = "top";
+                if (highlight) {
+                    context.fillStyle = 'red';
+                }
+                context.fillText(text, 0, 2);
+                imgElement.src = canvasElement.toDataURL("image/png");
+                imgElement.alt = text;
             }
 
             function layoutEscapes(escapeType, numbering) {
                 var allEscapes, escapeText, escapeElement,
                     escapeContainer, canvasElement, context, imgElement,
                     text, textWidth, fontStyle, i;
-                escapeContainer = document.querySelector('#'+escapeType+'s');
+                escapeContainer = document.querySelector('#' + escapeType + 's');
                 escapeContainer.innerHTML = '';
-                allEscapes = document.querySelectorAll('#editor img.'+escapeType);
+                allEscapes = document.querySelectorAll('#editor img.' +
+                    escapeType);
 
                 for (i = 0; i < allEscapes.length; i++) {
                     imgElement = allEscapes[i];
@@ -76,20 +78,21 @@
                     escapeElement.innerHTML = escapeText;
                     escapeContainer.appendChild(escapeElement);
                     escapeElement.addEventListener('focus', (function (
-                        imgElement) {
-                        return function (event) {
-                            styleCanvasImg(imgElement, imgElement.alt, true);
-                        };
+                                imgElement) {
+                                return function (event) {
+                                    styleCanvasImg(imgElement, imgElement.alt,
+                                        true);
+                                };
 
-                    })(imgElement, escapeElement));
+                            })(imgElement, escapeElement));
                     escapeElement.addEventListener('blur', (function (
-                        imgElement) {
-                        return function (event) {
-                            imgElement.setAttribute('data-text', this.innerHTML);
-                            styleCanvasImg(imgElement, imgElement.alt);
-                        };
+                                imgElement) {
+                                return function (event) {
+                                    imgElement.setAttribute('data-text', this.innerHTML);
+                                    styleCanvasImg(imgElement, imgElement.alt);
+                                };
 
-                    })(imgElement, escapeElement));
+                            })(imgElement, escapeElement));
 
                     text = numbering(i + 1);
 
@@ -98,228 +101,288 @@
                 }
             }
 
-            function footnoteNumbering (number) {
+            function footnoteNumbering(number) {
                 return number;
             }
 
-            function layoutFootnotes () {
+            function layoutFootnotes() {
                 layoutEscapes('footnote', footnoteNumbering);
             }
 
-            function marginnoteNumbering (number) {
-                return '⚫';
+            function marginnoteNumbering(number) {
+                return '°';
             }
 
-            function layoutMarginnotes () {
+            function layoutMarginnotes() {
                 layoutEscapes('marginnote', marginnoteNumbering);
             }
 
-            function endnoteNumbering (number) {
-                return String.fromCharCode(number+64);
+            function endnoteNumbering(number) {
+                return String.fromCharCode(number + 64);
             }
 
-            function layoutEndnotes () {
+            function layoutEndnotes() {
                 layoutEscapes('endnote', endnoteNumbering);
             }
 
             document.addEventListener("DOMContentLoaded", function () {
-                var editorArea = document.querySelector('#editor'),
-                    mutationConfig = {
-                        attributes: true,
-                        subtree: true,
-                        characterData: true,
-                        childList: true
-                    }, mutationHandler, observer, footnoteButton, beforePrint,
-                        afterPrint;
+                    var editorArea = document.querySelector('#editor'),
+                        mutationConfig = {
+                            attributes: true,
+                            subtree: true,
+                            characterData: true,
+                            childList: true
+                        }, mutationHandler, observer, footnoteButton,
+                            beforePrint,
+                        afterPrint, lookForEscapeImageNode;
 
-                layoutFootnotes();
-                layoutMarginnotes();
-                layoutEndnotes();
+                    layoutFootnotes();
+                    layoutMarginnotes();
+                    layoutEndnotes();
 
-                mutationHandler = function (mutationRecords) {
-
-                    mutationRecords.forEach(function (mutation) {
-                      //  console.log('***MUTATION***');
-                      //  console.log(mutation);
+                    lookForEscapeImageNode = function (node, escapeType) {
                         var i;
+                        for (i = 0; i < node.childNodes.length; i++) {
+                            if (lookForEscapeImageNode(node.childNodes[i],
+                                    escapeType)) {
+                                return true;
+                            }
+                        };
+                        if (node.nodeType !== 3 &&
+                            node.tagName.toLowerCase() ===
+                            "img" && node.classList
+                            .contains(escapeType)) {
+                            return true;
+                        } else {
+                            return false;
+                        }
 
-                        if (mutation.type === "childList") { 
-                            if (mutation.removedNodes.length > 0) {
-                                for (i = 0; i < mutation.removedNodes.length; i++) {
-                                    if (mutation.removedNodes[i].nodeType !== 3 &&
-                                        mutation.removedNodes[i].tagName.toLowerCase() ===
-                                        "img" && mutation.removedNodes[i].classList
-                                        .contains('footnote')) {
+
+                    };
+
+
+                    mutationHandler = function (mutationRecords) {
+
+                        mutationRecords.forEach(function (mutation) {
+                                //  console.log('***MUTATION***');
+                                //  console.log(mutation);
+                                var i, layoutFootnotesNeeded = false,
+                                    layoutEndnotesNeeded = false,
+                                    layoutMarginnotesNeeded = false;
+
+                                if (mutation.type === "childList") {
+                                    if (mutation.removedNodes.length > 0) {
+                                        for (i = 0; i < mutation.removedNodes.length; i++) {
+                                            if (!layoutFootnotesNeeded) {
+                                                layoutFootnotesNeeded =
+                                                    lookForEscapeImageNode(
+                                                    mutation.removedNodes[i],
+                                                    'footnote');
+                                            }
+                                            if (!layoutEndnotesNeeded) {
+                                                layoutEndnotesNeeded =
+                                                    lookForEscapeImageNode(
+                                                    mutation.removedNodes[i],
+                                                    'endnote');
+                                            }
+                                            if (!layoutMarginnotesNeeded) {
+                                                layoutMarginnotesNeeded =
+                                                    lookForEscapeImageNode(
+                                                    mutation.removedNodes[i],
+                                                    'marginnote');
+                                            }
+                                        }
+                                    } else if (mutation.addedNodes.length > 0) {
+
+                                        for (i = 0; i < mutation.addedNodes.length; i++) {
+                                            if (!layoutFootnotesNeeded) {
+                                                layoutFootnotesNeeded =
+                                                    lookForEscapeImageNode(
+                                                    mutation.addedNodes[i],
+                                                    'footnote');
+                                            }
+                                            if (!layoutEndnotesNeeded) {
+                                                layoutEndnotesNeeded =
+                                                    lookForEscapeImageNode(
+                                                    mutation.addedNodes[i],
+                                                    'endnote');
+                                            }
+                                            if (!layoutMarginnotesNeeded) {
+                                                layoutMarginnotesNeeded =
+                                                    lookForEscapeImageNode(
+                                                    mutation.addedNodes[i],
+                                                    'marginnote');
+                                            }
+                                        }
+                                    }
+                                    if (layoutFootnotesNeeded) {
                                         layoutFootnotes();
                                     }
-                                    if (mutation.removedNodes[i].nodeType !== 3 &&
-                                        mutation.removedNodes[i].tagName.toLowerCase() ===
-                                        "img" && mutation.removedNodes[i].classList
-                                        .contains('marginnote')) {
-                                        layoutMarginnotes();
-                                    }
-                                    if (mutation.removedNodes[i].nodeType !== 3 &&
-                                        mutation.removedNodes[i].tagName.toLowerCase() ===
-                                        "img" && mutation.removedNodes[i].classList
-                                        .contains('endnote')) {
+                                    if (layoutEndnotesNeeded) {
                                         layoutEndnotes();
                                     }
+                                    if (layoutMarginnotesNeeded) {
+                                        layoutMarginnotes();
+                                    }
                                 }
-                            } else if (mutation.addedNodes.length > 0) {
+                            });
+                    }
 
-                                for (i = 0; i < mutation.addedNodes.length; i++) {
-                                    if (mutation.addedNodes[i].nodeType !== 3 &&
-                                        mutation.addedNodes[i].tagName.toLowerCase() ===
-                                        "img" && mutation.addedNodes[i].classList
-                                        .contains('footnote')) {
-                                        layoutFootnotes();
-                                    }
-                                    if (mutation.addedNodes[i].nodeType !== 3 &&
-                                        mutation.addedNodes[i].tagName.toLowerCase() ===
-                                        "img" && mutation.addedNodes[i].classList
-                                        .contains('marginnote')) {
-                                        layoutMarginnotes();
-                                    }
-                                    if (mutation.addedNodes[i].nodeType !== 3 &&
-                                        mutation.addedNodes[i].tagName.toLowerCase() ===
-                                        "img" && mutation.addedNodes[i].classList
-                                        .contains('endnote')) {
-                                        layoutEndnotes();
-                                    }
-                                }
+                    observer = new MutationObserver(mutationHandler);
+
+                    observer.observe(editorArea, mutationConfig);
+
+                    function checkIfInEditor(node) {
+                        if (node.id === 'editor') {
+                            return true;
+                        } else if (node === document.body) {
+                            return false;
+                        } else {
+                            return checkIfInEditor(node.parentNode);
+                        }
+                    }
+
+                    function escapeButtonClicked(escapeType) {
+
+                        var range = window.getSelection().getRangeAt(0),
+                            newElement = document.createElement('img');
+
+                        newElement.classList.add(escapeType);
+                        newElement.setAttribute('data-text', '');
+                        newElement.innerHTML = ' ';
+
+
+                        if (checkIfInEditor(range.startContainer)) {
+                            range.deleteContents();
+                            range.insertNode(newElement);
+                            if (escapeType === 'footnote') {
+                                layoutFootnotes();
+                            } else if (escapeType === 'marginnote') {
+                                layoutMarginnotes();
+                            } else {
+                                layoutEndnotes();
                             }
                         }
-                    });
-                }
 
-                observer = new MutationObserver(mutationHandler);
-
-                observer.observe(editorArea, mutationConfig);
-
-                function checkIfInEditor (node) {
-                    if (node.id === 'editor') {
-                        return true;
-                    } else if (node === document.body) {
-                        return false;
-                    } else {
-                        return checkIfInEditor(node.parentNode);
                     }
-                }
 
-                function escapeButtonClicked (escapeType) {
+                    document.getElementById('insert-footnote').addEventListener(
+                        'click', function () {
+                            escapeButtonClicked('footnote');
+                        });
+                    document.getElementById('insert-marginnote').addEventListener(
+                        'click', function () {
+                            escapeButtonClicked('marginnote');
+                        });
+                    document.getElementById('insert-endnote').addEventListener(
+                        'click', function () {
+                            escapeButtonClicked('endnote');
+                        });
 
-                    var range = window.getSelection().getRangeAt(0),
-                        newElement = document.createElement('img');
+                    escapeBeforePrint = function (escapeType) {
+                        var footnoteNumbers = document.querySelectorAll(
+                            '#editor img.' + escapeType),
+                            i, fn, fnSpan;
 
-                    newElement.classList.add(escapeType);
-                    newElement.setAttribute('data-text', '');
-                    newElement.innerHTML = ' ';
+                        observer.disconnect();
 
-
-                    if (checkIfInEditor(range.startContainer)) {
-                        range.deleteContents();
-                        range.insertNode(newElement);
-                        if (escapeType==='footnote') {
-                            layoutFootnotes();
-                        } else if (escapeType==='marginnote') {
-                            layoutMarginnotes();
-                        } else {
-                            layoutEndnotes();
+                        for (i = 0; i < footnoteNumbers.length; i++) {
+                            fn = footnoteNumbers[i];
+                            fnSpan = document.createElement('span');
+                            fnSpan.classList.add(escapeType);
+                            fnSpan.innerHTML = fn.getAttribute('alt');
+                            fnSpan.setAttribute('data-text', fn.getAttribute(
+                                    'data-text'));
+                            fn.parentNode.replaceChild(fnSpan, fn);
                         }
-                    }
-
-                }
-
-                document.getElementById('insert-footnote').addEventListener('click', function () {escapeButtonClicked('footnote');});
-                document.getElementById('insert-marginnote').addEventListener('click', function () {escapeButtonClicked('marginnote');});
-                document.getElementById('insert-endnote').addEventListener('click', function () {escapeButtonClicked('endnote');});
-
-                escapeBeforePrint = function (escapeType) {
-                    var footnoteNumbers = document.querySelectorAll(
-                        '#editor img.'+escapeType),
-                        i, fn, fnSpan;
-
-                    observer.disconnect();
-
-                    for (i = 0; i < footnoteNumbers.length; i++) {
-                        fn = footnoteNumbers[i];
-                        fnSpan = document.createElement('span');
-                        fnSpan.classList.add(escapeType);
-                        fnSpan.innerHTML = fn.getAttribute('alt');
-                        fnSpan.setAttribute('data-text', fn.getAttribute(
-                            'data-text'));
-                        fn.parentNode.replaceChild(fnSpan, fn);
-                    }
-                };
-                escapeAfterPrint = function (escapeType) {
-                    var footnoteNumbers = document.querySelectorAll(
-                        '#editor span.'+ escapeType),
-                        i, fn, fnImg, mediaQueryList;
+                    };
+                    escapeAfterPrint = function (escapeType) {
+                        var footnoteNumbers = document.querySelectorAll(
+                            '#editor span.' + escapeType),
+                            i, fn, fnImg, mediaQueryList;
 
 
-                    for (i = 0; i < footnoteNumbers.length; i++) {
-                        fn = footnoteNumbers[i];
-                        fnImg = document.createElement('img');
-                        fnImg.classList.add(escapeType);
-                        fnImg.alt = fn.innerHTML;
-                        fnImg.setAttribute('data-text', fn.getAttribute(
-                            'data-text'));
-                        fn.parentNode.replaceChild(fnImg, fn);
-                    }
-                    layoutFootnotes();
-                    observer.observe(editorArea, mutationConfig);
-                };
-
-                function beforePrint () {
-                    escapeBeforePrint('footnote');
-                    escapeBeforePrint('marginnote');
-                    escapeBeforePrint('endnote');
-                }
-
-                function afterPrint () {
-                    escapeAfterPrint('footnote');
-                    escapeAfterPrint('marginnote');
-                    escapeAfterPrint('endnote');
-                }
-
-                if (window.matchMedia) {
-                    mediaQueryList = window.matchMedia('print');
-                    mediaQueryList.addListener(function (mql) {
-                        if (mql.matches) {
-                            beforePrint();
-                        } else {
-                            afterPrint();
+                        for (i = 0; i < footnoteNumbers.length; i++) {
+                            fn = footnoteNumbers[i];
+                            fnImg = document.createElement('img');
+                            fnImg.classList.add(escapeType);
+                            fnImg.alt = fn.innerHTML;
+                            fnImg.setAttribute('data-text', fn.getAttribute(
+                                    'data-text'));
+                            fn.parentNode.replaceChild(fnImg, fn);
                         }
-                    });
-                }
+                        layoutFootnotes();
+                        observer.observe(editorArea, mutationConfig);
+                    };
 
-                window.onbeforeprint = beforePrint;
-                window.onafterprint = afterPrint;
+                    function beforePrint() {
+                        escapeBeforePrint('footnote');
+                        escapeBeforePrint('marginnote');
+                        escapeBeforePrint('endnote');
+                    }
 
-            });
+                    function afterPrint() {
+                        escapeAfterPrint('footnote');
+                        escapeAfterPrint('marginnote');
+                        escapeAfterPrint('endnote');
+                    }
 
+                    if (window.matchMedia) {
+                        mediaQueryList = window.matchMedia('print');
+                        mediaQueryList.addListener(function (mql) {
+                                if (mql.matches) {
+                                    beforePrint();
+                                } else {
+                                    afterPrint();
+                                }
+                            });
+                    }
+
+                    window.onbeforeprint = beforePrint;
+                    window.onafterprint = afterPrint;
+
+                });
         </script>
     </head>
     
     <body>
         <div id="editor" contenteditable="true">
-            <p>The first chapter<img class="endnote" data-text="I wrote the first chapter while sitting in jail in Düsseldorf during the depression years for having stolen a chicken from my neighbor. Those were tough years. Subesequently I made changes to the chapter, but rereading it is still hard for me as it reminds me of my neighbor's chicken, so please excuse any kind of grammatical errorsd that I may not have been able to correct."> describes the <i>physical geography</i><img class="marginnote" data-text="<b>Physical geography</b> (also known as geosystems or physiography) is one of the two major subfields of geography."> and <i>geology</i><img class="marginnote" data-text="<b>Geology</b> (from the Greek γῆ, gê, 'earth' and λόγος, logos, 'study') is the science comprising the study of solid Earth, the rocks of which it is composed, and the processes by which they change."> of the islands with particular attention to the role of <i>volcanoes</i> and earthquakes. It also discusses the overall pattern of the flora and fauna including the fact that the islands can be divided, by what would eventually become known as the <i>Wallace line</i>, into two parts, those whose animals are more closely related to those of Asia and those whose fauna is closer to that of Australia.</p>
-            <p>The following chapters<img class="endnote" data-text="The chapters after the first are really just a filler. I wrote them so that the book would be thick enough to 'stand on its own.'"> describe in detail the places Wallace visited. Wallace includes numerous observations on the people, their languages, ways of living, and social organization, as well as on the plants and animals found in each location. He talks about the <i>biogeographic</i> patterns he observes and their implications for <i>natural history</i>, in terms both of the movement of species<img class="footnote" data-text="Implying <i>adaptive radiation</i>."> and of the geologic history of the region. He also narrates some of his personal experiences during his travels. The final chapter is an overview of the ethnic, linguistic, and cultural divisions among the people who live in the region and speculation about what such divisions might indicate about their history.</p>
-
-            <p><img class="footnote" data-text="This is the first footnote of sample content."><img class="footnote" data-text="This is the second footnote.">This<img class="footnote" data-text="This is a third footnote."> is a paragraph<img class="footnote" data-text="This is another footnote.">.<img class="footnote" data-text="And this is yet one more footnote."></p>
-            <p>This is a second<img class="footnote" data-text="A first footnote in the second paragraph."> paragraph.<img class="footnote" data-text="#2 in #2."></p>
+            <p>The first chapter
+                <img class="endnote" data-text="I wrote the first chapter while sitting in jail in Düsseldorf during the depression years for having stolen a chicken from my neighbor. Those were tough years. Subesequently I made changes to the chapter, but rereading it is still hard for me as it reminds me of my neighbor's chicken, so please excuse any kind of grammatical errorsd that I may not have been able to correct.">describes the <i>physical geography</i>
+                <img class="marginnote" data-text="<b>Physical geography</b> (also known as geosystems or physiography) is one of the two major subfields of geography.">and <i>geology</i>
+                <img class="marginnote" data-text="<b>Geology</b> (from the Greek γῆ, gê, 'earth' and λόγος, logos, 'study') is the science comprising the study of solid Earth, the rocks of which it is composed, and the processes by which they change.">of the islands with particular attention to the role of <i>volcanoes</i> and earthquakes. It also discusses the overall pattern of the flora and fauna including the fact that the islands can be divided, by what would eventually become known as the <i>Wallace line</i>,
+                into two parts, those whose animals are more closely related to those of Asia and those whose fauna is closer to that of Australia.</p>
+            <p>The following chapters
+                <img class="endnote" data-text="The chapters after the first are really just a filler. I wrote them so that the book would be thick enough to 'stand on its own.'">describe in detail the places Wallace visited. Wallace includes numerous observations on the people, their languages, ways of living, and social organization, as well as on the plants and animals found in each location. He talks about the <i>biogeographic</i> patterns
+                he observes and their implications for <i>natural history</i>, in terms both of the movement of species
+                <img class="footnote" data-text="Implying <i>adaptive radiation</i>.">and of the geologic history of the region. He also narrates some of his personal experiences during his travels. The final chapter is an overview of the ethnic, linguistic, and cultural divisions among the people who live in the region and speculation
+                about what such divisions might indicate about their history.</p>
+            <p>
+                <img class="footnote" data-text="This is the first footnote of sample content.">
+                <img class="footnote" data-text="This is the second footnote.">This
+                <img class="footnote" data-text="This is a third footnote.">is a paragraph
+                <img class="footnote" data-text="This is another footnote.">.
+                <img class="footnote" data-text="And this is yet one more footnote.">
+            </p>
+            <p>This is a second
+                <img class="footnote" data-text="A first footnote in the second paragraph.">paragraph.
+                <img class="footnote" data-text="#2 in #2.">
+            </p>
         </div>
         <div>
             <button id="insert-footnote">Insert footnote</button>
             <button id="insert-marginnote">Insert margin note</button>
             <button id="insert-endnote">Insert endnote</button>
         </div>
-        <h2>Margin notes:</h2>
+         <h2>Margin notes:</h2>
+
         <div id="marginnotes"></div>
-        <h2>Footnotes:</h2>
+         <h2>Footnotes:</h2>
+
         <div id="footnotes"></div>
-        <h2>Endnotes:</h2>
+         <h2>Endnotes:</h2>
+
         <div id="endnotes"></div>
     </body>
 
-</html>
+</html>// This is just a sample script. Paste your real code (javascript or HTML) here. if ('this_is'==/an_example/){of_beautifer();}else{var a=b?(c%d):e[f];}
