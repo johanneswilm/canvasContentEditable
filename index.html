@@ -39,15 +39,24 @@
         </style>
         <script>
             function styleCanvasImg(imgElement, text, highlight) {
-                canvasElement = document.createElement('canvas');
-                canvasElement.height = parseInt(document.defaultView.getComputedStyle(
+                var canvasElement = document.createElement('canvas');
+                var textHeight = parseInt(document.defaultView.getComputedStyle(
                         imgElement.parentNode, null)['lineHeight'], 10);
-                context = canvasElement.getContext("2d");
-                fontStyle = document.defaultView.getComputedStyle(
+                var ratio = window.devicePixelRatio;
+                if (ratio != 1) {
+                    canvasElement.height = textHeight * ratio;
+                    imgElement.style.fontSize=parseInt(document.defaultView.getComputedStyle(
+                        imgElement, null)['font-size'])*ratio+'px';
+                }
+                //canvasElement.style.height = textHeight;
+                var context = canvasElement.getContext("2d");
+                
+                var fontStyle = document.defaultView.getComputedStyle(
                     imgElement, null)['font'];
                 context.font = fontStyle;
-                textWidth = context.measureText(text)['width'];
+                var textWidth = context.measureText(text)['width'];
                 canvasElement.width = textWidth;
+
                 context.font = fontStyle;
                 context.textBaseline = "top";
                 if (highlight) {
@@ -56,6 +65,7 @@
                 context.fillText(text, 0, 2);
                 imgElement.src = canvasElement.toDataURL("image/png");
                 imgElement.alt = text;
+                imgElement.height = textHeight;
             }
 
             function layoutEscapes(escapeType, numbering) {
@@ -282,10 +292,11 @@
                     escapeBeforePrint = function (escapeType) {
                         var footnoteNumbers = document.querySelectorAll(
                             '#editor img.' + escapeType),
-                            i, fn, fnSpan;
+                            i, fn, fnSpan, fnPosition;
 
                         observer.disconnect();
-
+                        var scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+                        var scrollLeft = document.documentElement.scrollLeft || document.body.scrollLeft;
                         for (i = 0; i < footnoteNumbers.length; i++) {
                             fn = footnoteNumbers[i];
                             fnSpan = document.createElement('span');
@@ -293,7 +304,11 @@
                             fnSpan.innerHTML = fn.getAttribute('alt');
                             fnSpan.setAttribute('data-text', fn.getAttribute(
                                     'data-text'));
-                            fn.parentNode.replaceChild(fnSpan, fn);
+                            fnPosition = fn.getClientRects()[0];
+
+                            fnSpan.style.top = (scrollTop + fnPosition.top )+ 'px';
+                            fnSpan.style.left = (scrollLeft + fnPosition.left )+ 'px';
+//                            document.body.appendChild(fnSpan, fn);
                         }
                     };
                     escapeAfterPrint = function (escapeType) {
